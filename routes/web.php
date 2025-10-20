@@ -1,29 +1,31 @@
 <?php
 
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-// Halaman Beranda
+// Rute Halaman Publik
 Route::get('/', [PageController::class, 'home'])->name('home');
+Route::get('/berita', [PageController::class, 'posts'])->name('berita.index');
+Route::get('/berita/{post:slug}', [PageController::class, 'postDetail'])->name('berita.show');
+Route::get('/panduan', [PageController::class, 'guides'])->name('panduan.index');
+// Catatan: Halaman detail panduan belum ada di file js baru, jadi kita nonaktifkan dulu
+// Route::get('/panduan/{guide:slug}', [PageController::class, 'guideDetail'])->name('panduan.show');
+Route::get('/profil-gampong', [PageController::class, 'about'])->name('profil.gampong');
+Route::get('/kegiatan', [PageController::class, 'events'])->name('kegiatan.index');
+Route::get('/galeri', [PageController::class, 'galleries'])->name('galeri.index');
+Route::get('/galeri/{gallery}', [PageController::class, 'galleryDetail'])->name('galeri.show');
 
-// Halaman Berita
-Route::get('/berita', [PageController::class, 'posts'])->name('posts.index');
-Route::get('/berita/{post:slug}', [PageController::class, 'postDetail'])->name('posts.show');
+// Rute Dashboard bawaan Breeze
+Route::get('/dashboard', function () {
+    return Inertia\Inertia::render('Dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
 
-// Halaman Panduan Administrasi (Urus Surat)
-Route::get('/panduan', [PageController::class, 'guides'])->name('guides.index');
-Route::get('/panduan/{guide:slug}', [PageController::class, 'guideDetail'])->name('guides.show');
+// Rute Profil bawaan Breeze
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
 
-// Halaman Tentang Kami
-Route::get('/tentang-kami', [PageController::class, 'about'])->name('about');
-
-// Halaman Kalender Kegiatan
-Route::get('/kegiatan', [PageController::class, 'events'])->name('events.index');
-
-// Halaman Galeri
-Route::get('/galeri', [PageController::class, 'galleries'])->name('galleries.index');
-Route::get('/galeri/{gallery}', [PageController::class, 'galleryDetail'])->name('galleries.show');
-
-
-// Rute untuk autentikasi (jika Anda menginstal Breeze)
 require __DIR__.'/auth.php';

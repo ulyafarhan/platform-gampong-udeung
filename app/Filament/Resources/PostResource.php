@@ -11,7 +11,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 
-class PostResource extends Resource 
+class PostResource extends Resource
 {
     protected static ?string $model = Post::class;
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
@@ -43,7 +43,7 @@ class PostResource extends Resource
                             ->relationship('user', 'name')
                             ->searchable()
                             ->required()
-                            ->default(fn () => auth()->id),
+                            ->default(auth()->id),
 
                         Forms\Components\Toggle::make('is_featured')
                             ->required(),
@@ -76,7 +76,6 @@ class PostResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -93,9 +92,5 @@ class PostResource extends Resource
             'create' => Pages\CreatePost::route('/create'),
             'edit' => Pages\EditPost::route('/{record}/edit'),
         ];
-    }
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::count();
     }
 }

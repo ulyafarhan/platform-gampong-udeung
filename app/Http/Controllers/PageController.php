@@ -2,151 +2,111 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\Gallery;
 use App\Models\Guide;
 use App\Models\Official;
 use App\Models\Post;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class PageController extends Controller
 {
-    // Method untuk Halaman Beranda
-   public function home()
+    /**
+     * Menampilkan Halaman Beranda (Home.jsx)
+     */
+    public function home(): Response
     {
-        // Ambil 4 berita terbaru
-        $beritas = Post::where('published_at', '<=', now())
-            ->latest('published_at')
-            ->take(4)
-            ->get()
-            ->map(fn ($post) => [
-                'id' => $post->id,
-                'judul' => $post->title,
-                'slug' => $post->slug,
-                'gambar' => $post->image,
-                'isi' => $post->body,
-                'ringkasan' => $post->summary,
-                'created_at' => $post->published_at,
-            ]);
+        return Inertia::render('Public/Home', [
+            'beritas' => Post::where('published_at', '<=', now())
+                ->latest('published_at')
+                ->take(4)
+                ->get(),
+            'panduans' => Guide::orderBy('title')->take(4)->get(),
+            'kegiatans' => Event::where('starts_at', '>=', now())->orderBy('starts_at')->take(3)->get(),
+            'albumTerbaru' => Gallery::latest('activity_date')->first(),
+        ]);
+    }
 
-        // Ambil 4 panduan
-        $panduans = Guide::orderBy('title')
-            ->take(4)
-            ->get()
-            ->map(fn ($guide) => [
-                'id' => $guide->id,
-                'judul' => $guide->title,
-                'slug' => $guide->slug,
-            ]);
+    /**
+     * Menampilkan Halaman Daftar Berita (BeritaIndex.jsx)
+     */
+    public function posts(Request $request): Response
+    {
+        $query = Post::query()->where('published_at', '<=', now())->latest('published_at');
 
-        // Ambil 3 kegiatan terdekat
-        $kegiatans = Event::where('starts_at', '>=', now())
-            ->orderBy('starts_at')
-            ->take(3)
-            ->get()
-            ->map(fn ($event) => [
-                'id' => $event->id,
-                'nama_kegiatan' => $event->name,
-                'lokasi' => $event->location,
-                'tanggal_mulai' => $event->starts_at,
-            ]);
-
-        // Ambil 1 album galeri terbaru
-        $albumTerbaru = Gallery::latest('activity_date')
-            ->first();
-        
-        // Format data galeri agar sesuai dengan frontend
-        $formattedAlbum = null;
-        if ($albumTerbaru) {
-            $formattedAlbum = [
-                'id' => $albumTerbaru->id,
-                'judul' => $albumTerbaru->title,
-                // Kita ambil 4 foto pertama dari album
-                'fotos' => collect($albumTerbaru->images)->take(4)->map(fn($path, $index) => [
-                    'id' => $index, // id dummy
-                    'path' => $path,
-                ])->values()->all(),
-            ];
+        if ($request->has('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        return Inertia::render('Home', [
-            'beritas' => $beritas,
-            'panduans' => $panduans,
-            'kegiatans' => $kegiatans,
-            'albumTerbaru' => $formattedAlbum,
+        return Inertia::render('Public/BeritaIndex', [
+            'beritas' => $query->paginate(9)->withQueryString(),
+            'search' => $request->search,
         ]);
     }
 
-    // Method untuk menampilkan Halaman Daftar Berita (sudah ada)
-    public function posts()
-    {
-        $posts = Post::where('published_at', '<=', now())
-            ->latest('published_at')
-            ->paginate(6);
-
-        return Inertia::render('Posts/Index', [
-            'posts' => $posts,
-        ]);
-    }
-
-    // Method untuk menampilkan Halaman Detail Berita (sudah ada)
-    public function postDetail(Post $post)
+    /**
+     * Menampilkan Halaman Detail Berita (BeritaShow.jsx)
+     */
+    public function postDetail(Post $post): Response
     {
         if (!$post->published_at || $post->published_at->isFuture()) {
             abort(404);
         }
 
-        return Inertia::render('Posts/Show', [
-            'post' => $post,
+        return Inertia::render('Public/BeritaShow', [
+            'berita' => $post,
+            'beritaLainnya' => Post::where('published_at', '<=', now())->where('id', '!=', $post->id)->latest('published_at')->take(4)->get(),
         ]);
     }
 
-    // Method untuk Halaman Daftar Panduan
-    public function guides()
+    /**
+     * Menampilkan Halaman Daftar Panduan (PanduanIndex.jsx)
+     */
+    public function guides(): Response
     {
-        return Inertia::render('Guides/Index', [
+        return Inertia::render('Public/PanduanIndex', [
             'guides' => Guide::orderBy('title')->get(),
         ]);
     }
 
-    // Method untuk Halaman Detail Panduan
-    public function guideDetail(Guide $guide)
+    /**
+     * Menampilkan Halaman Profil Gampong & Aparatur (ProfilGampong.jsx)
+     */
+    public function about(): Response
     {
-        return Inertia::render('Guides/Show', [
-            'guide' => $guide,
-        ]);
-    }
-
-    // Method untuk Halaman Tentang Kami & Struktur Gampong
-    public function about()
-    {
-        return Inertia::render('About', [
+        return Inertia::render('Public/ProfilGampong', [
             'officials' => Official::orderBy('order')->get(),
         ]);
     }
 
-    // Method untuk Halaman Kalender Kegiatan
-    public function events()
+    /**
+     * Menampilkan Halaman Daftar Kegiatan (KegiatanIndex.jsx)
+     */
+    public function events(): Response
     {
-        return Inertia::render('Events/Index', [
-            'events' => Event::where('starts_at', '>=', now())->orderBy('starts_at')->get(),
+        return Inertia::render('Public/KegiatanIndex', [
+            'events' => Event::where('starts_at', '>=', now())->orderBy('starts_at')->paginate(10),
         ]);
     }
 
-    // Method untuk Halaman Galeri
-    public function galleries()
+    /**
+     * Menampilkan Halaman Daftar Galeri (GaleriIndex.jsx)
+     */
+    public function galleries(): Response
     {
-        return Inertia::render('Galleries/Index', [
-            'galleries' => Gallery::latest('activity_date')->get(),
+        return Inertia::render('Public/GaleriIndex', [
+            'galleries' => Gallery::latest('activity_date')->paginate(12),
         ]);
     }
 
-    // Method untuk Halaman Detail Galeri
-    public function galleryDetail(Gallery $gallery)
+    /**
+     * Menampilkan Halaman Detail Galeri (GaleriShow.jsx)
+     */
+    public function galleryDetail(Gallery $gallery): Response
     {
-        return Inertia::render('Galleries/Show', [
+        return Inertia::render('Public/GaleriShow', [
             'gallery' => $gallery,
         ]);
     }

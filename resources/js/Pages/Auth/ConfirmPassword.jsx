@@ -1,55 +1,63 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
+import { useEffect } from 'react';
 import { Head, useForm } from '@inertiajs/react';
+import { Button } from '@/Components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import InputError from '@/Components/InputError';
 
 export default function ConfirmPassword() {
     const { data, setData, post, processing, errors, reset } = useForm({
         password: '',
     });
 
+    useEffect(() => {
+        return () => {
+            reset('password');
+        };
+    }, []);
+
     const submit = (e) => {
         e.preventDefault();
-
-        post(route('password.confirm'), {
-            onFinish: () => reset('password'),
-        });
+        post(route('password.confirm'));
     };
 
     return (
-        <GuestLayout>
+        <>
             <Head title="Confirm Password" />
-
-            <div className="mb-4 text-sm text-gray-600">
-                This is a secure area of the application. Please confirm your
-                password before continuing.
+            <div className="flex items-center justify-center py-12 px-4 min-h-screen bg-gray-100 dark:bg-black">
+                <div className="mx-auto w-[420px]">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-2xl">Konfirmasi Password</CardTitle>
+                            <CardDescription>
+                                Ini adalah area aman dari aplikasi. Harap konfirmasi password Anda sebelum melanjutkan.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={submit}>
+                                <div className="grid gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="password">Password</Label>
+                                        <Input
+                                            id="password"
+                                            type="password"
+                                            name="password"
+                                            value={data.password}
+                                            autoFocus
+                                            onChange={(e) => setData('password', e.target.value)}
+                                        />
+                                        <InputError message={errors.password} />
+                                    </div>
+                                    <Button type="submit" className="w-full" disabled={processing}>
+                                        Konfirmasi
+                                    </Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-
-            <form onSubmit={submit}>
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        isFocused={true}
-                        onChange={(e) => setData('password', e.target.value)}
-                    />
-
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Confirm
-                    </PrimaryButton>
-                </div>
-            </form>
-        </GuestLayout>
+        </>
     );
 }
