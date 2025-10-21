@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ChatController; // Tambahkan ini
 use Illuminate\Support\Facades\Route;
 
 // Rute Halaman Publik
@@ -14,7 +15,7 @@ Route::get('/panduan', [PageController::class, 'guides'])->name('panduan.index')
 Route::get('/profil-gampong', [PageController::class, 'about'])->name('profil.gampong');
 Route::get('/kegiatan', [PageController::class, 'events'])->name('kegiatan.index');
 Route::get('/galeri', [PageController::class, 'galleries'])->name('galeri.index');
-Route::get('/galeri/{gallery}', [PageController::class, 'galleryDetail'])->name('galeri.show');
+Route::get('/galeri/{gallery:slug}', [PageController::class, 'galleryDetail'])->name('galeri.show');
 
 // Rute Dashboard bawaan Breeze
 Route::get('/dashboard', function () {
@@ -27,5 +28,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Rute untuk CeurdasChat
+Route::post('/chat', [ChatController::class, 'send'])->name('chat.send');
 
 require __DIR__.'/auth.php';

@@ -1,109 +1,109 @@
-import { Link, Head, usePage } from '@inertiajs/react';
-import CeurdasChat from '@/Components/CeurdasChat';
-import { useState, useEffect } from 'react';
-import { Button } from '@/Components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/Components/ui/sheet'; // <-- Impor Sheet
-import { Menu } from 'lucide-react'; // <-- Impor ikon Menu
+import ApplicationLogo from "@/Components/ApplicationLogo";
+import { Link } from "@inertiajs/react";
+import { useState, useEffect } from "react";
+import CeurdasChat from "@/Components/CeurdasChat";
+import { MainNav } from "@/Components/public/main-nav";
+import { MobileNav } from "@/Components/public/mobile-nav";
+import { ThemeToggle } from "@/Components/public/theme-toggle";
+import { SiteFooter } from "@/Components/public/site-footer";
 
-// Komponen NavLink Kustom untuk konsistensi
-const NavLink = ({ href, children, className = '' }) => (
-    <Link 
-        href={href} 
-        className={`transition-colors ${className}`}
-    >
-        {children}
-    </Link>
-);
-
-export default function PublicLayout({ children, title }) {
-    const { url } = usePage();
-    const isHomepage = url === '/';
-
+export default function PublicLayout({ children, auth }) {
     const [scrolled, setScrolled] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 567);
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+        setIsMounted(true);
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 10);
+        };
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    const headerClass = isHomepage && !scrolled
-        ? 'bg-transparent text-white'
-        : 'bg-white/80 dark:bg-black/80 backdrop-blur-sm shadow-sm text-gray-800 dark:text-gray-200';
-    
-    const linkClass = isHomepage && !scrolled
-        ? 'text-gray-200 hover:text-white'
-        : 'text-gray-600 hover:text-green-800 dark:text-gray-300 dark:hover:text-white';
+    const isHomePage = window.location.pathname === '/';
 
-    const brandClass = isHomepage && !scrolled
-        ? 'text-white'
-        : 'text-green-800 dark:text-green-400';
+    const headerClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled || !isHomePage
+        ? "bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-md"
+        : "bg-transparent"
+        }`;
+
+    const navLinkClasses = `relative font-medium text-base transition-colors duration-300 after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:w-0 after:h-[2px] after:transition-all after:duration-300 ${scrolled || !isHomePage
+        ? "text-gray-800 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-400 after:bg-green-600"
+        : "text-white hover:text-green-300 after:bg-green-300"
+        }`;
 
     return (
-        <>
-            <Head title={title ? `${title} - Gampong Udeung` : 'Platform Digital Gampong Udeung'} />
-            <div className="min-h-screen bg-gray-100 dark:bg-black font-['Inter']">
-                
-                <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${headerClass}`}>
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex justify-between items-center h-16">
-                            <Link href={route('home')} className={`font-['Merriweather'] font-bold text-lg transition-colors ${brandClass}`}>
-                                Gampong Udeung
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 font-['Inter']">
+            <header className={headerClasses}>
+                <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-20">
+                        <div className="flex items-center">
+                            <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
+                                <ApplicationLogo
+                                    className={`h-10 w-auto transition-all duration-300 ${scrolled || !isHomePage
+                                        ? "text-gray-800 dark:text-white"
+                                        : "text-white"
+                                        }`}
+                                />
+                                <span
+                                    className={`self-center text-2xl font-semibold whitespace-nowrap ${scrolled || !isHomePage
+                                        ? "text-gray-800 dark:text-white"
+                                        : "text-white"
+                                        }`}
+                                >
+                                    Gampong Udeung
+                                </span>
                             </Link>
-                            
-                            {/* Navigasi Desktop (Disembunyikan di layar kecil) */}
-                            <nav className="hidden md:flex space-x-6">
-                               <NavLink href={route('home')} className={`text-sm font-semibold ${linkClass}`}>Beranda</NavLink>
-                               <NavLink href={route('berita.index')} className={`text-sm font-semibold ${linkClass}`}>Berita</NavLink>
-                               <NavLink href={route('panduan.index')} className={`text-sm font-semibold ${linkClass}`}>Panduan</NavLink>
-                               <NavLink href={route('kegiatan.index')} className={`text-sm font-semibold ${linkClass}`}>Kegiatan</NavLink>
-                               <NavLink href={route('galeri.index')} className={`text-sm font-semibold ${linkClass}`}>Galeri</NavLink>
-                               <NavLink href={route('profil.gampong')} className={`text-sm font-semibold ${linkClass}`}>Profil</NavLink>
-                            </nav>
-
-                            {/* Tombol Hamburger Menu (Hanya tampil di layar kecil) */}
-                            <div className="md:hidden">
-                                <Sheet>
-                                    <SheetTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <Menu className={`h-6 w-6 transition-colors ${brandClass}`} />
-                                            <span className="sr-only">Buka menu</span>
-                                        </Button>
-                                    </SheetTrigger>
-                                    <SheetContent side="left">
-                                        <div className="p-4">
-                                            <Link href={route('home')} className="font-['Merriweather'] font-bold text-lg text-green-800 dark:text-green-400 mb-8 block">
-                                                Gampong Udeung
-                                            </Link>
-                                            <nav className="grid gap-4">
-                                                <SheetClose asChild><NavLink href={route('home')} className="text-lg font-semibold text-gray-800 dark:text-gray-200">Beranda</NavLink></SheetClose>
-                                                <SheetClose asChild><NavLink href={route('berita.index')} className="text-lg font-semibold text-gray-800 dark:text-gray-200">Berita</NavLink></SheetClose>
-                                                <SheetClose asChild><NavLink href={route('panduan.index')} className="text-lg font-semibold text-gray-800 dark:text-gray-200">Panduan</NavLink></SheetClose>
-                                                <SheetClose asChild><NavLink href={route('kegiatan.index')} className="text-lg font-semibold text-gray-800 dark:text-gray-200">Kegiatan</NavLink></SheetClose>
-                                                <SheetClose asChild><NavLink href={route('galeri.index')} className="text-lg font-semibold text-gray-800 dark:text-gray-200">Galeri</NavLink></SheetClose>
-                                                <SheetClose asChild><NavLink href={route('profil.gampong')} className="text-lg font-semibold text-gray-800 dark:text-gray-200">Profil Gampong</NavLink></SheetClose>
-                                            </nav>
-                                        </div>
-                                    </SheetContent>
-                                </Sheet>
-                            </div>
+                        </div>
+                        <MainNav navLinkClasses={navLinkClasses} />
+                        <div className="hidden md:flex items-center space-x-4">
+                            {isMounted && <ThemeToggle scrolled={scrolled} isHomePage={isHomePage} />}
+                            {auth && auth.user ? (
+                                <Link
+                                    href={route("dashboard")}
+                                    className={`font-semibold transition-colors duration-300 ${scrolled || !isHomePage
+                                        ? "text-gray-800 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-400"
+                                        : "text-white hover:text-green-300"
+                                        }`}
+                                >
+                                    Dashboard
+                                </Link>
+                            ) : (
+                                <>
+                                    <Link
+                                        href={route("login")}
+                                        className={`font-semibold transition-colors duration-300 ${scrolled || !isHomePage
+                                            ? "text-gray-800 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-400"
+                                            : "text-white hover:text-green-300"
+                                            }`}
+                                    >
+                                        Masuk
+                                    </Link>
+                                    <Link
+                                        href={route("register")}
+                                        className={`inline-flex items-center justify-center px-4 py-2 text-base font-medium rounded-full transition-all duration-300 ${scrolled || !isHomePage
+                                            ? "text-white bg-green-600 hover:bg-green-700 shadow-md"
+                                            : "text-green-700 bg-white hover:bg-gray-100"
+                                            }`}
+                                    >
+                                        Daftar
+                                    </Link>
+                                </>
+                            )}
+                        </div>
+                        <div className="md:hidden flex items-center">
+                            {isMounted && <ThemeToggle scrolled={scrolled} isHomePage={isHomePage} />}
+                            <MobileNav scrolled={scrolled} isHomePage={isHomePage} auth={auth} />
                         </div>
                     </div>
-                </header>
+                </nav>
+            </header>
 
-                <main className={isHomepage ? '' : 'pt-16'}>
-                    {children}
-                </main>
+            <main>{children}</main>
 
-                <footer className="py-8 bg-green-900 dark:bg-black text-green-200 border-t border-green-800">
-                    <div className="max-w-7xl mx-auto text-center">
-                        <p>© {new Date().getFullYear()} Pemerintah Gampong Udeung.</p>
-                        <p className="text-xs text-green-400 mt-1">Platform Digital Gampong Udeung</p>
-                    </div>
-                </footer>
+            <CeurdasChat />
 
-                <CeurdasChat />
-            </div>
-        </>
+            <SiteFooter />
+        </div>
     );
 }

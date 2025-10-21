@@ -1,153 +1,158 @@
-// File: resources/js/Components/CeurdasChat.jsx
-// Disempurnakan oleh Dr. Code - Fully Responsive & Production Ready
-
 import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/Components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Input } from '@/Components/ui/input';
-import { ScrollArea } from '@/Components/ui/scroll-area';
-import { MessageSquare, Send, X } from 'lucide-react';
+import { Button } from "@/Components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/Components/ui/card";
+import { Input } from "@/Components/ui/input";
+import { ScrollArea } from "@/Components/ui/scroll-area";
+import { Bot, Send, X, User, Loader2 } from 'lucide-react';
 import axios from 'axios';
 
-// Komponen untuk indikator pengetikan (Typing Indicator)
-const TypingIndicator = () => (
-    <div className="flex items-center space-x-2">
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold">C</div>
-        <div className="p-3 bg-muted rounded-lg flex items-center space-x-1.5">
-            <span className="h-2 w-2 bg-slate-400 rounded-full animate-pulse delay-75"></span>
-            <span className="h-2 w-2 bg-slate-400 rounded-full animate-pulse delay-150"></span>
-            <span className="h-2 w-2 bg-slate-400 rounded-full animate-pulse delay-300"></span>
-        </div>
-    </div>
-);
-
-export default function CeurdasChat() {
+const CeurdasChat = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
         {
-            sender: 'ai',
-            text: "Assalamu'alaikum! Ada yang bisa Ceurdas bantu seputar administrasi Gampong Udeung?"
-        }
+            id: 1,
+            text: "Assalamu'alaikum! Saya Ceurdas, asisten digital Gampong Udeung. Ada yang bisa saya bantu?",
+            sender: 'bot',
+        },
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const scrollAreaRef = useRef(null);
 
-    // Auto-scroll ke pesan terakhir
-    useEffect(() => {
-        if (isOpen) {
-            setTimeout(() => {
-                const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
-                if (viewport) {
-                    viewport.scrollTop = viewport.scrollHeight;
-                }
-            }, 100); // Beri sedikit jeda agar DOM sempat render
-        }
-    }, [messages, isOpen]);
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!input.trim() || isLoading) return;
+        if (!input.trim()) return;
 
-        const userMessage = { sender: 'user', text: input };
-        setMessages((prev) => [...prev, userMessage]);
-        setInput('');
-        setIsLoading(true);
+        const userMessage = {
+            id: Date.now(),
+            text: input,
+            sender: 'user',
+        };
 
-        const currentMessages = [...messages, userMessage];
-        setMessages(currentMessages);
+        setMessages(prev => [...prev, userMessage]);
         setInput('');
         setIsLoading(true);
 
         try {
-            const { data } = await axios.post(route('ceurdas.ask'), {
-            question: userMessage.text,
-            history: messages // Kirim array 'messages' yang lama sebagai histori
-        });
-        // Perbarui state dengan jawaban AI
-        setMessages((prev) => [...prev, { sender: 'ai', text: data.answer }]);
+            const { data } = await axios.post(route('chat.send'), {
+                question: userMessage.text,
+                history: messages 
+            });
 
-        } catch (err) {
-            console.error(err);
-            const fallback = err.response?.data?.answer || 'Maaf, terjadi gangguan. Coba lagi ya.';
-            setMessages((prev) => [...prev, { sender: 'ai', text: fallback }]);
+            if (!data) {
+                throw new Error('No data received from server');
+            }
+
+            const botMessage = {
+                id: Date.now() + 1,
+                text: data.answer,
+                sender: 'bot',
+            };
+
+            setMessages(prev => [...prev, botMessage]);
+
+        } catch (error) {
+            console.error("Error fetching chat response:", error);
+            const errorMessage = {
+                id: Date.now() + 1,
+                text: "Maaf, terjadi kesalahan saat mencoba menghubungi server. Silakan coba lagi nanti.",
+                sender: 'bot',
+            };
+            setMessages(prev => [...prev, errorMessage]);
         } finally {
             setIsLoading(false);
         }
     };
 
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        }
+    }, [messages]);
+
     return (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[1000] flex flex-col items-end space-y-3">
+        <div className={`fixed bottom-4 right-4 z-[1000] transition-all duration-300 ease-in-out`}>
+            {/* Chat Bubble Toggle */}
+            {!isOpen && (
+                <Button
+                    onClick={() => setIsOpen(true)}
+                    className="rounded-full w-16 h-16 bg-gradient-to-br from-green-500 to-blue-600 text-white shadow-2xl hover:scale-110 transition-transform duration-300 flex items-center justify-center"
+                >
+                    <Bot className="h-8 w-8" />
+                </Button>
+            )}
+
             {/* Chat Window */}
-            <div
-                className={`
-                    transition-all duration-300 ease-in-out
-                    ${isOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'}
-                `}
-            >
-                {/* Responsiveness: Ukuran kartu disesuaikan untuk mobile dan desktop */}
-                <Card className="w-[calc(100vw-2rem)] h-[75vh] max-w-md flex flex-col shadow-2xl sm:h-[60vh]">
-                    <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
-                        <CardTitle className="text-lg font-semibold">Asisten Ceurdas</CardTitle>
-                        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Tutup obrolan">
+            {isOpen && (
+                <Card className="w-80 md:w-96 h-[60vh] md:h-[70vh] bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl border-gray-200 dark:border-gray-700 shadow-2xl rounded-3xl flex flex-col animate-fade-in">
+                    <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-3">
+                            <Avatar className="w-10 h-10 border-2 border-green-500">
+                                <AvatarImage src="/img/ceurdas-logo.png" alt="Ceurdas AI" />
+                                <AvatarFallback className="bg-green-500 text-white">AI</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <h3 className="font-bold text-lg text-gray-900 dark:text-white">Ceurdas AI</h3>
+                                <p className="text-xs text-green-600 dark:text-green-400 font-semibold">Online</p>
+                            </div>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
                             <X className="h-5 w-5" />
                         </Button>
                     </CardHeader>
-
-                    <CardContent className="flex-1 p-0 overflow-hidden">
+                    <CardContent className="flex-1 p-0">
                         <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
-                            <div className="flex flex-col space-y-4">
-                                {messages.map((msg, i) => (
-                                    <div
-                                        key={i}
-                                        className={`flex items-end gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                                    >
-                                        {msg.sender === 'ai' && (
-                                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold">C</div>
+                            <div className="space-y-6">
+                                {messages.map((message) => (
+                                    <div key={message.id} className={`flex items-end gap-2 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        {message.sender === 'bot' && (
+                                            <Avatar className="w-8 h-8 flex-shrink-0">
+                                                <AvatarImage src="/img/ceurdas-logo.png" alt="Ceurdas AI" />
+                                                <AvatarFallback className="bg-green-500 text-white">AI</AvatarFallback>
+                                            </Avatar>
                                         )}
-                                        <div
-                                            className={`
-                                                max-w-[80%] rounded-lg px-3 py-2
-                                                break-words whitespace-pre-wrap
-                                                ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}
-                                            `}
-                                        >
-                                            <p className="text-sm">{msg.text}</p>
+                                        <div className={`max-w-[80%] p-3 rounded-2xl ${message.sender === 'user' ? 'bg-green-600 text-white rounded-br-none' : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'}`}>
+                                            <p className="text-sm leading-relaxed">{message.text}</p>
                                         </div>
+                                        {message.sender === 'user' && (
+                                            <Avatar className="w-8 h-8 flex-shrink-0">
+                                                <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200"><User className="w-4 h-4" /></AvatarFallback>
+                                            </Avatar>
+                                        )}
                                     </div>
                                 ))}
-                                {isLoading && <TypingIndicator />}
+                                {isLoading && (
+                                    <div className="flex items-end gap-2 justify-start">
+                                        <Avatar className="w-8 h-8 flex-shrink-0">
+                                            <AvatarImage src="/img/ceurdas-logo.png" alt="Ceurdas AI" />
+                                            <AvatarFallback className="bg-green-500 text-white">AI</AvatarFallback>
+                                        </Avatar>
+                                        <div className="max-w-[80%] p-3 rounded-2xl bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none flex items-center">
+                                            <Loader2 className="h-5 w-5 animate-spin text-green-500" />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </ScrollArea>
                     </CardContent>
-
-                    <CardFooter className="p-4 border-t">
-                        <form onSubmit={handleSubmit} className="flex items-center space-x-2 w-full">
+                    <CardFooter className="p-4 border-t border-gray-200 dark:border-gray-700">
+                        <form onSubmit={handleSubmit} className="flex items-center w-full gap-2">
                             <Input
-                                id="message"
-                                placeholder="Tulis pesan Anda..."
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                autoComplete="off"
+                                placeholder="Ketik pesan Anda..."
+                                className="flex-1 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded-full focus:ring-2 focus:ring-green-500"
                                 disabled={isLoading}
-                                className="flex-1"
                             />
-                            <Button type="submit" size="icon" disabled={isLoading || !input.trim()} aria-label="Kirim pesan">
+                            <Button type="submit" size="icon" className="rounded-full bg-green-600 hover:bg-green-700 text-white" disabled={isLoading}>
                                 <Send className="h-5 w-5" />
                             </Button>
                         </form>
                     </CardFooter>
                 </Card>
-            </div>
-            
-            {/* Toggle Button */}
-            <Button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                aria-label="Buka obrolan"
-            >
-                {isOpen ? <X className="h-8 w-8" /> : <MessageSquare className="h-8 w-8" />}
-            </Button>
+            )}
         </div>
     );
-}
+};
+
+export default CeurdasChat;

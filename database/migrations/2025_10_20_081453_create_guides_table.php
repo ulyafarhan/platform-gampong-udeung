@@ -10,11 +10,12 @@ return new class extends Migration
     {
         Schema::create('guides', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->string('slug')->unique();
             $table->text('description');
-            $table->json('requirements'); // Checklist Syarat
-            $table->longText('step_by_step'); // Alur Langkah-demi-Langkah
+            $table->json('requirements'); 
+            $table->longText('step_by_step'); 
             $table->string('estimated_time');
             $table->string('cost')->default('Rp 0,-');
             $table->text('tips')->nullable();

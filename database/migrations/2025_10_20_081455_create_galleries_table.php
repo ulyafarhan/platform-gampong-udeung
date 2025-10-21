@@ -10,10 +10,11 @@ return new class extends Migration
     {
         Schema::create('galleries', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('cover_image');
-            $table->json('images'); // Menyimpan path banyak gambar
+            $table->json('images'); 
             $table->date('activity_date');
             $table->timestamps();
         });

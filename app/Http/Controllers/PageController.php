@@ -7,6 +7,7 @@ use App\Models\Gallery;
 use App\Models\Guide;
 use App\Models\Official;
 use App\Models\Post;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,14 +19,22 @@ class PageController extends Controller
      */
     public function home(): Response
     {
-        return Inertia::render('Public/Home', [
-            'beritas' => Post::where('published_at', '<=', now())
-                ->latest('published_at')
-                ->take(4)
-                ->get(),
-            'panduans' => Guide::orderBy('title')->take(4)->get(),
-            'kegiatans' => Event::where('starts_at', '>=', now())->orderBy('starts_at')->take(3)->get(),
-            'albumTerbaru' => Gallery::latest('activity_date')->first(),
+            $albumTerbaru = Gallery::latest('activity_date')->first();
+            if ($albumTerbaru && is_string($albumTerbaru->images)) {
+                $albumTerbaru->images = json_decode($albumTerbaru->images, true);
+            }
+
+            return Inertia::render('Public/Home', [
+                'beritas' => Post::where('published_at', '<=', now())
+                    ->latest('published_at')
+                    ->take(4)
+                    ->get(),
+                'panduans' => Guide::orderBy('title')->take(4)->get(),
+                'kegiatans' => Event::where('starts_at', '>=', now())
+                    ->orderBy('starts_at')
+                    ->take(3)
+                    ->get(),
+                'albumTerbaru' => $albumTerbaru,
         ]);
     }
 
@@ -34,7 +43,9 @@ class PageController extends Controller
      */
     public function posts(Request $request): Response
     {
-        $query = Post::query()->where('published_at', '<=', now())->latest('published_at');
+        $query = Post::query()
+            ->where('published_at', '<=', now())
+            ->latest('published_at');
 
         if ($request->has('search')) {
             $query->where('title', 'like', '%' . $request->search . '%');
@@ -57,7 +68,11 @@ class PageController extends Controller
 
         return Inertia::render('Public/BeritaShow', [
             'berita' => $post,
-            'beritaLainnya' => Post::where('published_at', '<=', now())->where('id', '!=', $post->id)->latest('published_at')->take(4)->get(),
+            'beritaLainnya' => Post::where('published_at', '<=', now())
+                ->where('id', '!=', $post->id)
+                ->latest('published_at')
+                ->take(4)
+                ->get(),
         ]);
     }
 
@@ -67,7 +82,7 @@ class PageController extends Controller
     public function guides(): Response
     {
         return Inertia::render('Public/PanduanIndex', [
-            'guides' => Guide::orderBy('title')->get(),
+            'guides' => Guide::orderBy('title')->paginate(10),
         ]);
     }
 
@@ -76,8 +91,11 @@ class PageController extends Controller
      */
     public function about(): Response
     {
+        $settings = Setting::all()->pluck('value', 'key');
+
         return Inertia::render('Public/ProfilGampong', [
-            'officials' => Official::orderBy('order')->get(),
+            'aparats' => Official::orderBy('order')->get(),
+            'settings' => $settings,
         ]);
     }
 
@@ -87,7 +105,9 @@ class PageController extends Controller
     public function events(): Response
     {
         return Inertia::render('Public/KegiatanIndex', [
-            'events' => Event::where('starts_at', '>=', now())->orderBy('starts_at')->paginate(10),
+            'events' => Event::where('starts_at', '>=', now())
+                ->orderBy('starts_at')
+                ->paginate(10),
         ]);
     }
 
@@ -108,6 +128,22 @@ class PageController extends Controller
     {
         return Inertia::render('Public/GaleriShow', [
             'gallery' => $gallery,
+        ]);
+        
+        // Ambil galeri sebelumnya (id lebih kecil)
+        $prevGallery = Gallery::where('id', '<', $gallery->id)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        // Ambil galeri selanjutnya (id lebih besar)
+        $nextGallery = Gallery::where('id', '>', $gallery->id)
+            ->orderBy('id', 'asc')
+            ->first();
+
+        return Inertia::render('Public/GaleriShow', [
+            'gallery' => $gallery,
+            'prevGallery' => $prevGallery,
+            'nextGallery' => $nextGallery,
         ]);
     }
 }
