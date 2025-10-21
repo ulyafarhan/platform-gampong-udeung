@@ -22,11 +22,9 @@ class PostResource extends Resource
     {
         return $form
             ->schema([
-                // Membuat layout grid utama dengan 3 kolom
                 Forms\Components\Grid::make()
                     ->columns(3)
                     ->schema([
-                        // Kolom utama untuk konten, mengambil 2 dari 3 bagian
                         Forms\Components\Section::make('Konten Utama')
                             ->schema([
                                 Forms\Components\TextInput::make('title')
@@ -44,11 +42,10 @@ class PostResource extends Resource
 
                                 Forms\Components\RichEditor::make('body')
                                     ->required()
-                                    ->columnSpanFull(), // Rich editor mengisi lebar penuh di dalam section ini
+                                    ->columnSpanFull(), 
                             ])
-                            ->columnSpan(2), // Section ini mengambil 2 kolom
+                            ->columnSpan(2), 
 
-                        // Kolom 'sidebar' untuk metadata, mengambil 1 bagian
                         Forms\Components\Section::make('Meta')
                             ->schema([
                                 Forms\Components\FileUpload::make('image')
@@ -105,7 +102,7 @@ class PostResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true), // Sembunyikan secara default
+                    ->toggleable(isToggledHiddenByDefault: true), 
             ])
             ->filters([
                 TernaryFilter::make('is_featured')

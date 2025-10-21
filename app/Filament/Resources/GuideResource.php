@@ -16,10 +16,17 @@ class GuideResource extends Resource
     protected static ?string $model = Guide::class;
     protected static ?string $navigationIcon = 'heroicon-o-book-open';
 
+    public static function canAccess(): bool
+    {
+        return true;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
+                Forms\Components\Hidden::make('user_id')
+                    ->default(auth()->id()),
                 Forms\Components\TextInput::make('title')
                     ->required()
                     ->maxLength(255)

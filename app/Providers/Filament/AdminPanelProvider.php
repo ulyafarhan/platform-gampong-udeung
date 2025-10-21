@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -16,22 +17,29 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Support\Facades\Vite;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        Filament::registerRenderHook(
+            'panels::body.end',
+            fn (): string => Vite::useBuildDirectory('build')->withEntryPoints(['resources/css/filament.css'])->toHtml(),
+        );
+
         return $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->login()
-            // ->brandName('Platform Gampong Udeung') // Nonaktifkan sementara
+            ->brandName('Platform Gampong Udeung')
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Indigo,
+                'gray' => Color::Slate,
             ])
-            // ->font('Inter') // Nonaktifkan sementara
-            // ->darkMode(true) // Nonaktifkan sementara
+            ->font('Inter')
+            ->darkMode(true) 
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -39,7 +47,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                 // Kosongkan sementara untuk menonaktifkan semua widget kustom
+                 \App\Filament\Widgets\StatsOverview::class,
             ])
             ->middleware([
                 EncryptCookies::class,

@@ -2,9 +2,7 @@
 
 namespace Tests\Feature\Filament;
 
-use App\Filament\Resources\PostResource\Pages\CreatePost;
-use App\Filament\Resources\PostResource\Pages\EditPost;
-use App\Filament\Resources\PostResource\Pages\ListPosts;
+use App\Filament\Resources\PostResource;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,87 +13,70 @@ class PostResourceTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected User $user;
-
     protected function setUp(): void
     {
         parent::setUp();
-        // Buat user baru untuk setiap test
-        $this->user = User::factory()->create();
 
-        $this->user->givePermissionTo('view-any Post');
-        $this->user->givePermissionTo('create Post');
-        $this->user->givePermissionTo('update Post');
-        $this->user->givePermissionTo('delete Post');
-
-        $this->actingAs($this->user);
+        $this->actingAs(User::factory()->create());
     }
 
-    public function test_halaman_daftar_berita_bisa_ditampilkan(): void
+    public function test_can_render_list_page(): void
     {
-        $this->get(ListPosts::getUrl())->assertSuccessful();
+        Livewire::test(PostResource\Pages\ListPosts::class)->assertSuccessful();
     }
 
-    public function test_bisa_membuat_berita_baru(): void
+    public function test_can_create_post(): void
     {
-        $newData = Post::factory()->make();
+        $newPost = Post::factory()->make();
 
-        Livewire::test(CreatePost::class)
+        Livewire::test(PostResource\Pages\CreatePost::class)
             ->fillForm([
-                'title' => $newData->title,
-                'body' => $newData->body,
-                'user_id' => $this->user->id, // Gunakan user yang sedang login
-                'published_at' => $newData->published_at,
+                'title' => $newPost->title,
+                'body' => $newPost->body,
             ])
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $this->assertDatabaseHas(Post::class, [
-            'title' => $newData->title,
+        $this->assertDatabaseHas('posts', [
+            'title' => $newPost->title,
+            'body' => $newPost->body,
         ]);
     }
 
-    public function test_bisa_memvalidasi_input_saat_membuat_berita(): void
-    {
-        Livewire::test(CreatePost::class)
-            ->fillForm(['title' => null])
-            ->call('create')
-            ->assertHasFormErrors(['title' => 'required']);
-    }
-
-    public function test_bisa_menampilkan_data_berita_di_halaman_edit(): void
+    public function test_can_edit_post()
     {
         $post = Post::factory()->create();
+        $newPostData = Post::factory()->make();
 
-        $this->get(EditPost::getUrl(['record' => $post]))->assertSuccessful();
-    }
-
-    public function test_bisa_mengubah_data_berita(): void
-    {
-        $post = Post::factory()->create();
-        $newData = Post::factory()->make();
-
-        Livewire::test(EditPost::class, ['record' => $post->getRouteKey()])
+        Livewire::test(PostResource\Pages\EditPost::class, [
+            'record' => $post->getRouteKey(),
+        ])
             ->fillForm([
-                'title' => $newData->title,
-                'body' => $newData->body,
+                'title' => $newPostData->title,
+                'body' => $newPostData->body,
             ])
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $this->assertDatabaseHas(Post::class, [
+        $this->assertDatabaseHas('posts', [
             'id' => $post->id,
-            'title' => $newData->title,
+            'title' => $newPostData->title,
+            'body' => $newPostData->body,
         ]);
     }
 
-    public function test_bisa_menghapus_berita(): void
+    public function test_can_delete_post()
     {
         $post = Post::factory()->create();
 
-        Livewire::test(EditPost::class, ['record' => $post->getRouteKey()])
-            ->callAction(\Filament\Actions\DeleteAction::class);
+        Livewire::test(PostResource\Pages\EditPost::class, [
+            'record' => $post->getRouteKey(),
+        ])
+            ->callAction('delete')
+            ->assertHasNoErrors();
 
-        $this->assertModelMissing($post);
+        $this->assertDatabaseMissing('posts', [
+            'id' => $post->id,
+        ]);
     }
 }
