@@ -1,0 +1,39 @@
+/* resources/css/filament.css */
+
+/*
+ * =================================================================================
+ * Meningkatkan Kerapian dan Konsistensi Visual (UI/UX)
+ * =================================================================================
+ */
+
+/* Membuat semua kartu, tabel, dan container utama memiliki sudut yang lebih tumpul dan bayangan yang lembut */
+.fi-main-ctn, .fi-section, .fi-ta-ctn {
+    --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+    @apply rounded-xl shadow-md;
+}
+
+/* Memberi lebih banyak ruang 'bernapas' di dalam kartu/section */
+.fi-section-header, .fi-section-content {
+    @apply px-6;
+}
+
+/* Membuat header tabel lebih rapi */
+.fi-ta-header-ctn {
+    @apply rounded-t-lg;
+}
+
+/*
+ * =================================================================================
+ * Meningkatkan Responsivitas
+ * =================================================================================
+ */
+
+/* Pada layar kecil, kurangi padding horizontal agar konten tidak terlalu mepet */
+@media (max-width: 640px) {
+    .fi-main-ctn {
+        @apply p-2;
+    }
+    .fi-section-header, .fi-section-content {
+        @apply px-4;
+    }
+}

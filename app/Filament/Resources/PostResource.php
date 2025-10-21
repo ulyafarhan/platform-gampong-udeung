@@ -10,6 +10,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use Filament\Tables\Filters\SelectFilter; 
+use Filament\Tables\Filters\TernaryFilter;
 
 class PostResource extends Resource
 {
@@ -20,60 +22,104 @@ class PostResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make()
+                // Membuat layout grid utama dengan 3 kolom
+                Forms\Components\Grid::make()
+                    ->columns(3)
                     ->schema([
-                        Forms\Components\TextInput::make('title')
-                            ->required()
-                            ->maxLength(255)
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) => $operation === 'create' ? $set('slug', Str::slug($state)) : null),
+                        // Kolom utama untuk konten, mengambil 2 dari 3 bagian
+                        Forms\Components\Section::make('Konten Utama')
+                            ->schema([
+                                Forms\Components\TextInput::make('title')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) => $operation === 'create' ? $set('slug', Str::slug($state)) : null),
 
-                        Forms\Components\TextInput::make('slug')
-                            ->required()
-                            ->maxLength(255)
-                            ->disabled()
-                            ->dehydrated()
-                            ->unique(Post::class, 'slug', ignoreRecord: true),
+                                Forms\Components\TextInput::make('slug')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->unique(Post::class, 'slug', ignoreRecord: true),
 
-                        Forms\Components\RichEditor::make('body')
-                            ->required()
-                            ->columnSpanFull(),
+                                Forms\Components\RichEditor::make('body')
+                                    ->required()
+                                    ->columnSpanFull(), // Rich editor mengisi lebar penuh di dalam section ini
+                            ])
+                            ->columnSpan(2), // Section ini mengambil 2 kolom
 
-                        Forms\Components\Select::make('user_id')
-                            ->relationship('user', 'name')
-                            ->searchable()
-                            ->required()
-                            ->default(auth()->id),
+                        // Kolom 'sidebar' untuk metadata, mengambil 1 bagian
+                        Forms\Components\Section::make('Meta')
+                            ->schema([
+                                Forms\Components\FileUpload::make('image')
+                                    ->label('Gambar Unggulan')
+                                    ->image()
+                                    ->directory('posts'),
 
-                        Forms\Components\Toggle::make('is_featured')
-                            ->required(),
+                                Forms\Components\DateTimePicker::make('published_at')
+                                    ->label('Tanggal Publikasi')
+                                    ->default(now()),
 
-                        Forms\Components\DateTimePicker::make('published_at')
-                            ->default(now()),
-                    ])->columns(2),
+                                Forms\Components\Toggle::make('is_featured')
+                                    ->label('Tampilkan di Halaman Utama?'),
 
-                Forms\Components\Section::make('Image')
-                    ->schema([
-                        Forms\Components\FileUpload::make('image')
-                            ->image()
-                            ->directory('posts'),
-                    ])
+                                Forms\Components\Select::make('user_id')
+                                    ->label('Penulis')
+                                    ->relationship('user', 'name')
+                                    ->searchable()
+                                    ->required()
+                                    ->default(auth()->id())
+                                ])
+                        ])
             ]);
     }
-
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('image'),
-                Tables\Columns\TextColumn::make('title')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('slug')->searchable()->sortable(),
-                Tables\Columns\IconColumn::make('is_featured')->boolean(),
-                Tables\Columns\TextColumn::make('published_at')->date()->sortable(),
-                Tables\Columns\TextColumn::make('user.name')->sortable(),
+                Tables\Columns\ImageColumn::make('image')
+                    ->label('Gambar')
+                    ->square()
+                    ->width(80)
+                    ->height(80),
+
+                Tables\Columns\TextColumn::make('title')
+                    ->label('Judul')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Penulis')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\IconColumn::make('is_featured')
+                    ->label('Featured')
+                    ->boolean(),
+
+                Tables\Columns\TextColumn::make('published_at')
+                    ->label('Dipublikasikan')
+                    ->date('d M Y')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true), // Sembunyikan secara default
             ])
             ->filters([
-                //
+                TernaryFilter::make('is_featured')
+                    ->label('Featured')
+                    ->boolean()
+                    ->trueLabel('Hanya Featured')
+                    ->falseLabel('Bukan Featured')
+                    ->native(false),
+
+                SelectFilter::make('user_id')
+                    ->label('Penulis')
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
